@@ -12,6 +12,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import logging
 
 from robot.errors import DataError
 from robot.utils import is_string, is_dict_like, split_from_equals
@@ -54,7 +55,7 @@ class NamedArgumentResolver(object):
             elif self._is_named(arg, named, variables):
                 named.append(split_from_equals(arg))
             elif named:
-                self._raise_positional_after_named()
+                self._raise_positional_after_named(positional, named, arguments)
             else:
                 positional.append(arg)
         return positional, named
@@ -77,9 +78,16 @@ class NamedArgumentResolver(object):
             return True
         return argspec.supports_named and name in argspec.positional
 
-    def _raise_positional_after_named(self):
-        raise DataError("%s '%s' got positional argument after named arguments."
-                        % (self._argspec.type, self._argspec.name))
+    def _raise_positional_after_named(self, positional, named, arguments):
+        positional_txt = 'Positional: [%s]' % ', '.join(positional)
+        logging.warning(positional_txt)
+        named_txt = 'Named: [%s]' % ', '.join(named)
+        logging.warning(named_txt)
+        arguments_txt = 'Arguments: [%s]' % ', '.join(arguments)
+        logging.warning(arguments_txt)
+        error_trace = '\n'.join([positional_txt, named_txt, arguments_txt])
+        raise DataError("%s '%s' got positional argument after named arguments.\n%s"
+                        % (self._argspec.type, self._argspec.name, error_trace))
 
 
 class NullNamedArgumentResolver(object):
